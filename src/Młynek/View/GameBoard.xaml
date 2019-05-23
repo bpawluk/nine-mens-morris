@@ -1,0 +1,532 @@
+﻿<Window x:Class="Młynek.View.GameBoard"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Młynek.View"
+        xmlns:vm="clr-namespace:Młynek.ViewModel"
+        xmlns:converters="clr-namespace:Młynek.View.Converters"
+        mc:Ignorable="d"
+        Title="Młynek" Height="800" Width="1000">
+
+    <!--VIEW MODEL-->
+    <Window.DataContext>
+        <vm:GameViewModel/>
+    </Window.DataContext>
+
+    <!--RESOURCES-->
+    <Window.Resources>
+
+        <!--CONVERTERS-->
+        <converters:PercentageConverter x:Key="PercentageConverter"/>
+        <converters:ResponsiveSquareSizeConverter x:Key="SquareConverter"/>
+        <converters:ScrollViewerEnablerConverter x:Key="ScrollViewerEnabler"/>
+        <converters:FieldStateConverter x:Key="FieldStateConverter"/>
+        <converters:StringFormatConverter x:Key="Formatter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!--STYLES-->
+
+        <!--GAME FIELD-->
+        <Style TargetType="Ellipse" x:Key="Field">
+            <!--EMPTY FIELD-->
+            <Setter Property="Height">
+                <Setter.Value>
+                    <MultiBinding Converter="{StaticResource SquareConverter}" ConverterParameter="0.05">
+                        <Binding ElementName="Canvas" Path="ActualWidth"/>
+                        <Binding ElementName="Canvas" Path="ActualHeight"/>
+                    </MultiBinding>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Width" Value="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="Fill" Value="Black"/>
+
+            <!--OCCUPIED FIELD-->
+            <Style.Triggers>
+                <!--WHITE PAWN-->
+                <DataTrigger Binding="{Binding Path=(local:CustomAttachedProperties.FieldState), RelativeSource={RelativeSource Self}}" Value="White">
+                    <Setter Property="Height">
+                        <Setter.Value>
+                            <MultiBinding Converter="{StaticResource SquareConverter}" ConverterParameter="0.1">
+                                <Binding ElementName="Canvas" Path="ActualWidth"/>
+                                <Binding ElementName="Canvas" Path="ActualHeight"/>
+                            </MultiBinding>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Stroke">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                <GradientStop Color="#4a402c" Offset="0.0" />
+                                <GradientStop Color="#332b1f" Offset="1.0" />
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="StrokeThickness" Value="6"/>
+                    <Setter Property="Fill">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                <GradientStop Color="Wheat" Offset="0.0" />
+                                <GradientStop Color="WhiteSmoke" Offset="1.0" />
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+
+                <!--BLACK PAWN-->
+                <DataTrigger Binding="{Binding Path=(local:CustomAttachedProperties.FieldState), RelativeSource={RelativeSource Self}}" Value="Black">
+                    <Setter Property="Height">
+                        <Setter.Value>
+                            <MultiBinding Converter="{StaticResource SquareConverter}" ConverterParameter="0.1">
+                                <Binding ElementName="Canvas" Path="ActualWidth"/>
+                                <Binding ElementName="Canvas" Path="ActualHeight"/>
+                            </MultiBinding>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Stroke">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                <GradientStop Color="Wheat" Offset="0.0" />
+                                <GradientStop Color="WhiteSmoke" Offset="1.0" />
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="StrokeThickness" Value="6"/>
+                    <Setter Property="Fill">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                <GradientStop Color="#332b1f" Offset="0.0" />
+                                <GradientStop Color="#4a402c" Offset="1.0" />
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--FIELD BUTTON-->
+        <Style TargetType="Button" x:Key="Position">
+            <Setter Property="Height" Value="{Binding ElementName=Canvas, Path=ActualHeight, Converter={StaticResource PercentageConverter}, ConverterParameter=0.1}"/>
+            <Setter Property="Width" Value="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <!--DEFAULT BUTTON-->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontFamily" Value="Verdana"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}" RenderOptions.EdgeMode="Aliased" Padding="5" BorderBrush="White" BorderThickness="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="Foreground" Value="#3a3a3a"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--DEFAULT LABEL-->
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Verdana"/>
+        </Style>
+
+        <!--DEFAULT TEXTBOX-->
+        <Style TargetType="TextBox">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Verdana"/>
+        </Style>
+    </Window.Resources>
+
+
+    <!--LAYOUT-->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="210"/>
+            <ColumnDefinition Width="4*"/>
+        </Grid.ColumnDefinitions>
+
+        <!--SIDE MENU-->
+        <ScrollViewer Padding="10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"  Background="#3a3a3a">
+            <Grid Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="7*"/>
+                    <ColumnDefinition Width="88*"/>
+                </Grid.ColumnDefinitions>
+                <!--CINFIGURATION-->
+                <Label Grid.ColumnSpan="2" FontSize="16" Padding="0" Margin="5,2,5,3">Game configuration</Label>
+                <Label Grid.Row="1" Grid.ColumnSpan="2" Padding="0" Margin="5,7,5,3">WHITE PLAYER</Label>
+                <Grid Grid.Row="2" Grid.ColumnSpan="2" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <RadioButton IsChecked="{Binding WhiteConfig.IsHuman}" Grid.Column="0" GroupName="White" Foreground="White" Margin="5">Human</RadioButton>
+                    <RadioButton IsChecked="{Binding WhiteConfig.IsAI}" Grid.Column="1" GroupName="White" Foreground="White" Margin="5">AI</RadioButton>
+                </Grid>
+                <Grid Visibility="{Binding WhiteConfig.IsAI, Mode=OneWay, Converter={StaticResource BoolToVis}}" Grid.Row="3" Grid.ColumnSpan="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*"/>
+                            <ColumnDefinition Width="4*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Tree depth</Label>
+                        <Slider Grid.Column="1" Value="{Binding WhiteConfig.TreeDepth}" Minimum="1" Maximum="6" TickFrequency="1" IsSnapToTickEnabled="True"></Slider>
+                        <Label Grid.Column="2" Content="{Binding WhiteConfig.TreeDepth}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <RadioButton Grid.Column="0" GroupName="WhiteType" Foreground="White" Margin="5">MinMax</RadioButton>
+                        <RadioButton IsChecked="{Binding WhiteConfig.AlfaBetaEnabled}" Grid.Column="1" GroupName="WhiteType" Foreground="White" Margin="5">AlfaBeta</RadioButton>
+                    </Grid>
+                    <Label Grid.Row="2" Padding="0" Margin="5,2.5">Evaluation weights</Label>
+                    <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Positions</Label>
+                        <Slider Grid.Column="1" Value="{Binding WhiteConfig.PositionsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding WhiteConfig.PositionsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" FontSize="11" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="4" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Rows</Label>
+                        <Slider Grid.Column="1" Value="{Binding WhiteConfig.RowsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding WhiteConfig.RowsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="5" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Columns</Label>
+                        <Slider Grid.Column="1" Value="{Binding WhiteConfig.ColumnsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding WhiteConfig.ColumnsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="6" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Moves</Label>
+                        <Slider Grid.Column="1" Value="{Binding WhiteConfig.MovesWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding WhiteConfig.MovesWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="7" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Pawns</Label>
+                        <Slider Grid.Column="1" Value="{Binding WhiteConfig.PawnsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding WhiteConfig.PawnsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                </Grid>
+                <Label Grid.Row="4" Grid.ColumnSpan="2" Padding="0" Margin="5,8,5,2">BLACK PLAYER</Label>
+                <Grid Grid.Row="5" Grid.ColumnSpan="2" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <RadioButton IsChecked="{Binding BlackConfig.IsHuman}" Grid.Column="0" GroupName="Black" Foreground="White" Margin="5">Human</RadioButton>
+                    <RadioButton IsChecked="{Binding BlackConfig.IsAI}" Grid.Column="1" GroupName="Black" Foreground="White" Margin="5">AI</RadioButton>
+                </Grid>
+                <Grid Visibility="{Binding BlackConfig.IsAI, Mode=OneWay, Converter={StaticResource BoolToVis}}" Grid.Row="6" Grid.ColumnSpan="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*"/>
+                            <ColumnDefinition Width="4*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Tree depth</Label>
+                        <Slider Grid.Column="1" Value="{Binding BlackConfig.TreeDepth}" Minimum="1" Maximum="6" TickFrequency="1" IsSnapToTickEnabled="True"></Slider>
+                        <Label Grid.Column="2" Content="{Binding BlackConfig.TreeDepth}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <RadioButton Grid.Column="0" GroupName="BlackType" Foreground="White" Margin="5">MinMax</RadioButton>
+                        <RadioButton IsChecked="{Binding BlackConfig.AlfaBetaEnabled}" Grid.Column="1" GroupName="BlackType" Foreground="White" Margin="5">AlfaBeta</RadioButton>
+                    </Grid>
+                    <Label Grid.Row="2" Padding="0" Margin="5,2.5">Evaluation weights</Label>
+                    <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Positions</Label>
+                        <Slider Grid.Column="1" Value="{Binding BlackConfig.PositionsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding BlackConfig.PositionsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" FontSize="11" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="4" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Rows</Label>
+                        <Slider Grid.Column="1" Value="{Binding BlackConfig.RowsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding BlackConfig.RowsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="5" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Columns</Label>
+                        <Slider Grid.Column="1" Value="{Binding BlackConfig.ColumnsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding BlackConfig.ColumnsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="6" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Moves</Label>
+                        <Slider Grid.Column="1" Value="{Binding BlackConfig.MovesWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding BlackConfig.MovesWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                    <Grid Grid.Row="7" Grid.ColumnSpan="2" Margin="5,2.5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label FontSize="11" HorizontalContentAlignment="Left" Padding="0" VerticalAlignment="Center">Pawns</Label>
+                        <Slider Grid.Column="1" Value="{Binding BlackConfig.PawnsWeight}" Minimum="0" Maximum="1"></Slider>
+                        <Label Grid.Column="2" Content="{Binding BlackConfig.PawnsWeight, Converter={StaticResource Formatter}, ConverterParameter={}{0:F2}}" HorizontalContentAlignment="Right" Padding="0" VerticalAlignment="Center"></Label>
+                    </Grid>
+                </Grid>
+                <!--STATISTICS-->
+                <Label Grid.Row="7" Grid.ColumnSpan="2" FontSize="16" Padding="0" Margin="5,7,5,3">Statistics</Label>
+                <Grid Grid.Row="8" Grid.ColumnSpan="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Column="0" Grid.Row="0">White time:</Label>
+                    <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding WhiteStats.Time}" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"></TextBox>
+                    <Label Visibility="{Binding WhiteConfig.IsAI, Mode=OneWay, Converter={StaticResource BoolToVis}}" Grid.Column="0" Grid.Row="1">White nodes:</Label>
+                    <TextBox Visibility="{Binding WhiteConfig.IsAI, Mode=OneWay, Converter={StaticResource BoolToVis}}" Text="{Binding WhiteStats.Nodes}" Grid.Column="1" Grid.Row="1" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"></TextBox>
+                    <Label Grid.Column="0" Grid.Row="2">White moves:</Label>
+                    <TextBox Grid.Column="1" Grid.Row="2" Text="{Binding WhiteStats.Moves}" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"></TextBox>
+                    <Label Grid.Column="0" Grid.Row="3">Black time:</Label>
+                    <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding BlackStats.Time}" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"></TextBox>
+                    <Label Visibility="{Binding BlackConfig.IsAI, Mode=OneWay, Converter={StaticResource BoolToVis}}" Grid.Column="0" Grid.Row="4">Black nodes:</Label>
+                    <TextBox Visibility="{Binding BlackConfig.IsAI, Mode=OneWay, Converter={StaticResource BoolToVis}}" Grid.Column="1" Grid.Row="4" Text="{Binding BlackStats.Nodes}" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"></TextBox>
+                    <Label Grid.Column="0" Grid.Row="5">Black moves:</Label>
+                    <TextBox Grid.Column="1" Grid.Row="5" Text="{Binding BlackStats.Moves}" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Right"></TextBox>
+                </Grid>
+                <Button Grid.Row="9" Grid.ColumnSpan="2" Margin="0,5" Command="{Binding Path=StartGameCmd}">NEW GAME</Button>
+            </Grid>
+        </ScrollViewer>
+        <!--GAME BOARD-->
+        <Grid Grid.Column="1"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                    <GradientStop Color="#8c600e" Offset="0.0" />
+                    <GradientStop Color="#593f0d" Offset="1.0" />
+                </LinearGradientBrush>
+            </Grid.Background>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="70"/>
+            </Grid.RowDefinitions>
+
+            <Label Content="{Binding Path=HumanPlayerViewModel.Message}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="18" Margin="10,5,10,0"></Label>
+
+            <!--BOARD SETUP-->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource ScrollViewerEnabler}, ConverterParameter=400}" HorizontalScrollBarVisibility="{Binding ActualWidth, RelativeSource={RelativeSource Self}, Converter={StaticResource ScrollViewerEnabler}, ConverterParameter=400}">
+                <Grid Name="Canvas"  MinHeight="400" MinWidth="400">
+                    <Rectangle Name="OuterSquare" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Fill="#ebdd7f" Stroke="Black" StrokeThickness="6">
+                        <Rectangle.Height>
+                            <MultiBinding Converter="{StaticResource SquareConverter}" ConverterParameter="0.857;6">
+                                <Binding ElementName="Canvas" Path="ActualWidth"/>
+                                <Binding ElementName="Canvas" Path="ActualHeight"/>
+                            </MultiBinding>
+                        </Rectangle.Height>
+                    </Rectangle>
+                    <Rectangle Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Fill="#ebdd7f" Stroke="Black" StrokeThickness="6">
+                        <Rectangle.Height>
+                            <MultiBinding Converter="{StaticResource SquareConverter}" ConverterParameter="0.5714;6">
+                                <Binding ElementName="Canvas" Path="ActualWidth"/>
+                                <Binding ElementName="Canvas" Path="ActualHeight"/>
+                            </MultiBinding>
+                        </Rectangle.Height>
+                    </Rectangle>
+                    <Rectangle Height="5" Width="{Binding ElementName=OuterSquare, Path=ActualWidth}" Stroke="Black" StrokeThickness="6"></Rectangle>
+                    <Rectangle Height="{Binding ElementName=OuterSquare, Path=ActualHeight}" Width="5" Stroke="Black" StrokeThickness="6"></Rectangle>
+                    <Rectangle Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Fill="#ebdd7f" Stroke="Black" StrokeThickness="6">
+                        <Rectangle.Height>
+                            <MultiBinding Converter="{StaticResource SquareConverter}" ConverterParameter="0.2857;6">
+                                <Binding ElementName="Canvas" Path="ActualWidth"/>
+                                <Binding ElementName="Canvas" Path="ActualHeight"/>
+                            </MultiBinding>
+                        </Rectangle.Height>
+                    </Rectangle>
+
+                    <!--GAME FIELDS-->
+                    <Grid Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}">
+                        <Grid.Height>
+                            <MultiBinding Converter="{StaticResource SquareConverter}" ConverterParameter="1">
+                                <Binding ElementName="Canvas" Path="ActualWidth"/>
+                                <Binding ElementName="Canvas" Path="ActualHeight"/>
+                            </MultiBinding>
+                        </Grid.Height>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Ellipse x:Name="PawnSize" Grid.Column="0" Grid.Row="0" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[0].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="0" Grid.Row="0" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="0" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="3" Grid.Row="0" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[1].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="3" Grid.Row="0" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="1" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="6" Grid.Row="0" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[2].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="6" Grid.Row="0" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="2" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="1" Grid.Row="1" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[3].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="1" Grid.Row="1" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="3" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="3" Grid.Row="1" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[4].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="3" Grid.Row="1" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="4" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="5" Grid.Row="1" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[5].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="5" Grid.Row="1" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="5" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="2" Grid.Row="2" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[6].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="2" Grid.Row="2" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="6" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="3" Grid.Row="2" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[7].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="3" Grid.Row="2" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="7" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="4" Grid.Row="2" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[8].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="4" Grid.Row="2" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="8" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="0" Grid.Row="3" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[9].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="0" Grid.Row="3" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="9" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="1" Grid.Row="3" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[10].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="1" Grid.Row="3" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="10" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="2" Grid.Row="3" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[11].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="2" Grid.Row="3" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="11" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="4" Grid.Row="3" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[12].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="4" Grid.Row="3" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="12" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="5" Grid.Row="3" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[13].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="5" Grid.Row="3" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="13" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="6" Grid.Row="3" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[14].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="6" Grid.Row="3" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="14" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="2" Grid.Row="4" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[15].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="2" Grid.Row="4" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="15" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="3" Grid.Row="4" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[16].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="3" Grid.Row="4" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="16" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="4" Grid.Row="4" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[17].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="4" Grid.Row="4" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="17" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="1" Grid.Row="5" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[18].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="1" Grid.Row="5" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="18" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="3" Grid.Row="5" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[19].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="3" Grid.Row="5" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="19" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="5" Grid.Row="5" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[20].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="5" Grid.Row="5"  Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="20" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="0" Grid.Row="6" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[21].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="0" Grid.Row="6" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="21" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="3" Grid.Row="6" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[22].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="3" Grid.Row="6" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="22" Style="{StaticResource Position}"/>
+                        <Ellipse Grid.Column="6" Grid.Row="6" local:CustomAttachedProperties.FieldState="{Binding Path = Game.GameBoard.Fields[23].State, Mode = OneWay, Converter={StaticResource FieldStateConverter}}" Style="{StaticResource Field}"/>
+                        <Button Grid.Column="6" Grid.Row="6" Command="{Binding Path=HumanPlayerViewModel.ChooseFieldCmd}" CommandParameter="23" Style="{StaticResource Position}"/>
+                    </Grid>
+                </Grid>
+            </ScrollViewer>
+
+            <!--PLAYERS-->
+            <Grid Grid.Row="2" Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <Ellipse Width="50" Height="50" local:CustomAttachedProperties.FieldState="White" Style="{StaticResource Field}"/>
+                <Label Content="{Binding WhiteName}" Grid.Column="1" FontSize="22" VerticalContentAlignment="Center" Margin="5,0"></Label>
+                <Label Content="{Binding BlackName}" Grid.Column="2" FontSize="22" VerticalContentAlignment="Center" HorizontalContentAlignment="Right" Margin="5,0"></Label>
+                <Ellipse Width="50" Height="50" Grid.Column="3" local:CustomAttachedProperties.FieldState="Black" Style="{StaticResource Field}"/>
+            </Grid>
+
+        </Grid>
+
+    </Grid>
+</Window>
